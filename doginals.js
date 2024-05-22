@@ -489,11 +489,9 @@ function chunkToNumber(chunk) {
 }
 
 async function extract(txid) {
-  let resp = await axios.get(
-    `https://dogechain.info/api/v1/transaction/${txid}`
-  );
-  let transaction = resp.data.transaction;
-  let script = Script.fromHex(transaction.inputs[0].scriptSig.hex);
+  let resp = await nownodes.get(`/tx/${txid}`);
+  let transaction = resp.data;
+  let script = Script.fromHex(transaction.vin[0].hex);
   let chunks = script.chunks;
 
   let prefix = chunks.shift().buf.toString("utf8");
@@ -513,11 +511,9 @@ async function extract(txid) {
 
     if (n !== remaining - 1) {
       txid = transaction.outputs[0].spent.hash;
-      resp = await axios.get(
-        `https://dogechain.info/api/v1/transaction/${txid}`
-      );
-      transaction = resp.data.transaction;
-      script = Script.fromHex(transaction.inputs[0].scriptSig.hex);
+      resp = await nownodes.get(`/tx/${txid}`);
+      transaction = resp.data;
+      script = Script.fromHex(transaction.vin[0].hex);
       chunks = script.chunks;
       continue;
     }
