@@ -1,17 +1,19 @@
 #!/usr/bin/env node
 
-const api = require("./nownodes");
-const nownodes = api.nownodes;
 const dogecore = require("bitcore-lib-doge");
 const axios = require("axios");
 const fs = require("fs");
 const dotenv = require("dotenv");
 const mime = require("mime-types");
 const express = require("express");
+
 const { PrivateKey, Address, Transaction, Script, Opcode } = dogecore;
 const { Hash, Signature } = dogecore.crypto;
 
 dotenv.config();
+
+const api = require("./nownodes");
+const { apiKey, doge, nownodes } = api;
 
 if (process.env.TESTNET == "true") {
   dogecore.Networks.defaultNetwork = dogecore.Networks.testnet;
@@ -85,7 +87,7 @@ async function walletSync() {
 
   let wallet = JSON.parse(fs.readFileSync(WALLET_PATH));
 
-  console.log("syncing utxos");
+  console.log("syncing utxos for", wallet.address);
 
   let response = await nownodes.get(`/utxo/${wallet.address}`);
   wallet.utxos = await Promise.all(
@@ -94,7 +96,7 @@ async function walletSync() {
       return {
         txid: output.txid,
         vout: output.vout,
-        script: tx.vout[output.vout].hex,
+        script: tx.data.vout[output.vout].hex,
         satoshis: parseInt(output.value, 10),
       };
     })
@@ -438,23 +440,17 @@ function updateWallet(wallet, tx) {
 }
 
 async function broadcast(tx, retry) {
-  const body = {
-    jsonrpc: "1.0",
-    id: 0,
+  const jsonrpcReq = {
+    API_key: apiKey,
+    jsonrpc: "2.0",
+    id: `send_${Date.now()}`,
     method: "sendrawtransaction",
     params: [tx.toString()],
   };
 
-  const options = {
-    auth: {
-      username: process.env.NODE_RPC_USER,
-      password: process.env.NODE_RPC_PASS,
-    },
-  };
-
   while (true) {
     try {
-      await axios.post(process.env.NODE_RPC_URL, body, options);
+      await doge.post("/", jsonrpcReq);
       break;
     } catch (e) {
       if (!retry) throw e;
