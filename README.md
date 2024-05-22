@@ -1,6 +1,6 @@
 # Doginals
 
-A minter and protocol for inscriptions on Dogecoin. 
+A minter and protocol for inscriptions on Dogecoin.
 
 ## Setup
 
@@ -13,10 +13,7 @@ npm install
 Create a `.env` file with your node information:
 
 ```
-NODE_RPC_URL=http://<ip>:<port>
-NODE_RPC_USER=<username>
-NODE_RPC_PASS=<password>
-TESTNET=false
+NOWNODES_API_KEY=<your api key>
 ```
 
 ## Funding
@@ -66,7 +63,7 @@ node . mint DSV12KPb8m5b6YtfmqY89K6YqvdVwMYDPn dog.jpeg
 ```
 
 ```
-node . mint DSV12KPb8m5b6YtfmqY89K6YqvdVwMYDPn "text/plain;charset=utf8" 576f6f6621 
+node . mint DSV12KPb8m5b6YtfmqY89K6YqvdVwMYDPn "text/plain;charset=utf8" 576f6f6621
 ```
 
 **Note**: Please use a fresh wallet to mint to with nothing else in it until proper wallet for doginals support comes. You can get a paper wallet [here](https://www.fujicoin.org/wallet_generator?currency=Dogecoin).
@@ -141,28 +138,6 @@ With the restriction that each inscription part after the first must start with 
 This allows indexers to know how much data remains.
 
 ## FAQ
-
-### I'm getting ECONNREFUSED errors when minting
-
-There's a problem with the node connection. Your `dogecoin.conf` file should look something like:
-
-```
-rpcuser=ape
-rpcpassword=zord
-rpcport=22555
-server=1
-```
-
-Make sure `port` is not set to the same number as `rpcport`. Also make sure `rpcauth` is not set.
-
-Your `.env file` should look like:
-
-```
-NODE_RPC_URL=http://127.0.0.1:22555
-NODE_RPC_USER=ape
-NODE_RPC_PASS=zord
-TESTNET=false
-```
 
 ### I'm getting "insufficient priority" errors when minting
 

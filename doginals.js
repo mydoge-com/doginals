@@ -27,6 +27,9 @@ if (process.env.FEE_PER_KB) {
 
 const WALLET_PATH = process.env.WALLET || ".wallet.json";
 
+const sleep = async (time) =>
+  new Promise((resolve) => setTimeout(resolve, time));
+
 async function main() {
   let cmd = process.argv[2];
 
@@ -201,12 +204,15 @@ async function mint() {
 }
 
 async function broadcastAll(txs, retry) {
-  for (let i = 0; i < txs.length; i++) {
+  let i = 0;
+
+  for await (tx of txs) {
     console.log(`broadcasting tx ${i + 1} of ${txs.length}`);
 
     try {
-      throw new Error("hello");
-      await broadcast(txs[i], retry);
+      await broadcast(tx, retry);
+      await sleep(3 * 60 * 1000); // Wait for confirmation
+      i++;
     } catch (e) {
       console.log("broadcast failed", e);
       console.log("saving pending txs to pending-txs.json");
@@ -219,7 +225,7 @@ async function broadcastAll(txs, retry) {
     }
   }
 
-  fs.deleteFileSync("pending-txs.json");
+  fs.unlinkSync("pending-txs.json");
 
   console.log("inscription txid:", txs[1].hash);
 }
@@ -444,7 +450,7 @@ function updateWallet(wallet, tx) {
 async function broadcast(tx, retry) {
   const jsonrpcReq = {
     API_key: apiKey,
-    jsonrpc: "2.0",
+    jsonrpc: "1.0",
     id: `send_${Date.now()}`,
     method: "sendrawtransaction",
     params: [tx.toString()],
@@ -455,13 +461,13 @@ async function broadcast(tx, retry) {
       await doge.post("/", jsonrpcReq);
       break;
     } catch (e) {
-      if (!retry) throw e;
       let msg =
         e.response &&
         e.response.data &&
         e.response.data.error &&
         e.response.data.error.message;
-      if (msg && msg.includes("too-long-mempool-chain")) {
+
+      if (retry && msg && msg.includes("too-long-mempool-chain")) {
         console.warn("retrying, too-long-mempool-chain");
         await new Promise((resolve) => setTimeout(resolve, 1000));
       } else {
