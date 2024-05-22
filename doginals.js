@@ -410,7 +410,9 @@ function fund(wallet, tx) {
   }
 
   if (tx.inputAmount < tx.outputAmount + tx.getFee()) {
-    throw new Error("not enough funds");
+    throw new Error(
+      `not enough funds: ${tx.inputAmount} < ${tx.outputAmount + tx.getFee()}`
+    );
   }
 }
 
