@@ -25,6 +25,8 @@ if (process.env.FEE_PER_KB) {
   Transaction.FEE_PER_KB = 100000000;
 }
 
+console.log("using FEE_PER_KB", Transaction.FEE_PER_KB);
+
 const WALLET_PATH = process.env.WALLET || ".wallet.json";
 
 const sleep = async (time) =>
@@ -211,7 +213,8 @@ async function broadcastAll(txs, retry) {
 
     try {
       await broadcast(tx, retry);
-      await sleep(3 * 60 * 1000); // Wait for confirmation
+      await sleep(1 * 60 * 1000); // Wait for confirmation
+      await walletSync();
       i++;
     } catch (e) {
       console.log("broadcast failed", e);
@@ -225,7 +228,9 @@ async function broadcastAll(txs, retry) {
     }
   }
 
-  fs.unlinkSync("pending-txs.json");
+  if (fs.existsSync("pending-txs.json")) {
+    fs.unlinkSync("pending-txs.json");
+  }
 
   console.log("inscription txid:", txs[1].hash);
 }

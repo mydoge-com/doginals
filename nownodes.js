@@ -3,6 +3,10 @@ const axios = require("axios");
 const NODE_BASE_URL = "https://doge.nownodes.io";
 const NOWNODES_BASE_URL = "https://dogebook.nownodes.io/api/v2";
 
+if (!process.env.NOWNODES_API_KEY) {
+  throw new Error("missing NOWNODES_API_KEY");
+}
+
 const apiKey = process.env.NOWNODES_API_KEY;
 
 const nownodes = axios.create({
