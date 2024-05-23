@@ -519,7 +519,8 @@ async function extract(txid) {
     let n = chunkToNumber(chunks.shift());
 
     if (n !== remaining - 1) {
-      txid = transaction.outputs[0].spent.hash;
+      // TODO - Currently broken with NOWNODES api
+      txid = transaction.vout[0].spent.hash;
       resp = await nownodes.get(`/tx/${txid}`);
       transaction = resp.data;
       script = Script.fromHex(transaction.vin[0].hex);
