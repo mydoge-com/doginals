@@ -38,6 +38,7 @@ async function main() {
   if (fs.existsSync("pending-txs.json")) {
     console.log("found pending-txs.json. rebroadcasting...");
     const txs = JSON.parse(fs.readFileSync("pending-txs.json"));
+    await walletSync();
     await broadcastAll(
       txs.map((tx) => new Transaction(tx)),
       false
@@ -96,15 +97,17 @@ async function walletSync() {
 
   let response = await nownodes.get(`/utxo/${wallet.address}`);
   wallet.utxos = await Promise.all(
-    response.data.map(async (output) => {
-      const tx = await nownodes.get(`/tx/${output.txid}`);
-      return {
-        txid: output.txid,
-        vout: output.vout,
-        script: tx.data.vout[output.vout].hex,
-        satoshis: parseInt(output.value, 10),
-      };
-    })
+    response.data
+      .map(async (output) => {
+        const tx = await nownodes.get(`/tx/${output.txid}`);
+        return {
+          txid: output.txid,
+          vout: output.vout,
+          script: tx.data.vout[output.vout].hex,
+          satoshis: parseInt(output.value, 10),
+        };
+      })
+      .sort((a, b) => a.satoshis - b.satoshis)
   );
 
   fs.writeFileSync(WALLET_PATH, JSON.stringify(wallet, 0, 2));
@@ -212,12 +215,11 @@ async function broadcastAll(txs, retry) {
     console.log(`broadcasting tx ${i + 1} of ${txs.length}`);
 
     try {
+      if (i > 0) await sleep(1 * 60 * 1000); // Wait for confirmation
       await broadcast(tx, retry);
-      await sleep(1 * 60 * 1000); // Wait for confirmation
-      await walletSync();
       i++;
     } catch (e) {
-      console.log("broadcast failed", e);
+      console.log("broadcast failed");
       console.log("saving pending txs to pending-txs.json");
       console.log("to reattempt broadcast, re-run the command");
       fs.writeFileSync(
@@ -232,7 +234,7 @@ async function broadcastAll(txs, retry) {
     fs.unlinkSync("pending-txs.json");
   }
 
-  console.log("inscription txid:", txs[1].hash);
+  console.log("txid:", (txs[1] || tx[0]).hash);
 }
 
 function bufferToChunk(b, type) {
@@ -463,7 +465,8 @@ async function broadcast(tx, retry) {
 
   while (true) {
     try {
-      await doge.post("/", jsonrpcReq);
+      const response = await doge.post("/", jsonrpcReq);
+      console.log("broadcast txid:", response.data.result);
       break;
     } catch (e) {
       let msg =
@@ -471,6 +474,8 @@ async function broadcast(tx, retry) {
         e.response.data &&
         e.response.data.error &&
         e.response.data.error.message;
+
+      console.error(msg);
 
       if (retry && msg && msg.includes("too-long-mempool-chain")) {
         console.warn("retrying, too-long-mempool-chain");
