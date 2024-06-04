@@ -96,8 +96,13 @@ async function walletSync() {
   console.log("syncing utxos for", wallet.address);
 
   let response = await nownodes.get(`/utxo/${wallet.address}`);
+  let utxos = response.data.sort((a, b) => {
+    const aValue = parseInt(a.value, 10);
+    const bValue = parseInt(b.value, 10);
+    return bValue > aValue ? 1 : bValue < aValue ? -1 : a.height - b.height;
+  });
   wallet.utxos = await Promise.all(
-    response.data
+    utxos
       .map(async (output) => {
         const tx = await nownodes.get(`/tx/${output.txid}`);
         return {
