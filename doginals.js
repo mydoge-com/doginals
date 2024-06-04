@@ -217,10 +217,9 @@ async function broadcastAll(txs, retry) {
   let i = 0;
 
   for await (tx of txs) {
-    console.log(`broadcasting tx ${i + 1} of ${txs.length}`);
-
     try {
       if (i > 0) await sleep(1 * 60 * 1000); // Wait for confirmation
+      console.log(`broadcasting tx ${i + 1} of ${txs.length}`);
       await broadcast(tx, retry);
       i++;
     } catch (e) {
@@ -238,8 +237,6 @@ async function broadcastAll(txs, retry) {
   if (fs.existsSync("pending-txs.json")) {
     fs.unlinkSync("pending-txs.json");
   }
-
-  console.log("txid:", (txs[1] || tx[0]).hash);
 }
 
 function bufferToChunk(b, type) {
